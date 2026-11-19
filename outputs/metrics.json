@@ -1,0 +1,32 @@
+{
+  "total_requests": 30,
+  "blocked_requests": 15,
+  "block_rate": 0.5,
+  "by_group": {
+    "safe_queries": {
+      "total": 5,
+      "blocked": 0,
+      "block_rate": 0.0
+    },
+    "attack_queries": {
+      "total": 7,
+      "blocked": 7,
+      "block_rate": 1.0
+    },
+    "edge_cases": {
+      "total": 3,
+      "blocked": 3,
+      "block_rate": 1.0
+    },
+    "rate_limit": {
+      "total": 15,
+      "blocked": 5,
+      "block_rate": 0.3333333333333333
+    }
+  },
+  "rate_limit_hits": 5,
+  "judge_checks": 0,
+  "judge_fails": 0,
+  "judge_fail_rate": 0.0,
+  "alerts": []
+}

@@ -6,6 +6,16 @@
 
 ---
 
+## Bài nộp cá nhân
+
+- Họ tên: Đoàn Văn Tú
+- MSSV: 2A202603595 · Lớp: L3A
+- Chạy từ gốc repo: `source .venv/bin/activate`, `python src/main.py`, rồi `python scripts/grade.py --submission-dir . --out outputs/grade_report.json`.
+- Theo cấu hình được yêu cầu cho bài nộp này, Blue dùng Liquid trực tiếp (`LIQUID_BASE_URL=https://api.liquid.ai/openai/v1`, `LIQUID_MODEL=lfm2.5-24b-a2b`, `LIQUID_API_KEY`); Red/Red Advance hỗ trợ OpenRouter với `RED_TEAM_PROVIDER=openrouter`, `RED_MODEL=openai/gpt-4o-mini`, `RED_OPENROUTER_API_KEY` và `RED_OPENROUTER_BASE_URL`. Đây là thay đổi provider so với starter, giữ cùng model Red mặc định.
+- Audit và monitoring là observer trong suite; rate limiter, input và output là plugin. Kết quả chỉ được sinh bằng các lệnh lab.
+
+Trong `outputs/metrics.json`, `block_rate` là số lượt bị chặn chia cho tổng số lượt của cả bốn nhóm CP3. Xem `by_group.attack_queries.block_rate` để biết tỷ lệ chặn tấn công và `by_group.safe_queries.block_rate` để biết tỷ lệ chặn nhầm. Nhóm `rate_limit` thử riêng việc cấp lượt, nên các lượt được phép trong nhóm này dừng trước khi gọi model.
+
 ## Thời lượng
 
 | Phần | Thời gian |

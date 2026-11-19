@@ -134,10 +134,11 @@ async def part4_attacks():
 
 
 async def main(parts=None):
-    setup_api_key()
-
     if parts is None:
         parts = [2, 3, 4]  # Core: CP2 → CP3 → CP4
+
+    if any(part in (3, 4) for part in parts):
+        setup_api_key(need_blue=3 in parts, need_red=4 in parts)
 
     for part in parts:
         if part == 2:

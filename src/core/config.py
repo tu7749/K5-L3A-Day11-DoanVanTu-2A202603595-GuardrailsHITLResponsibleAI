@@ -35,8 +35,8 @@ PROVIDER_GEMINI = "gemini"
 PROVIDER_OPENROUTER = "openrouter"
 
 # --- Blue Team (LOCKED) ---
-BLUE_PROVIDER = PROVIDER_OPENROUTER
-BLUE_MODEL = "liquid/lfm-3-1.7b:free"
+BLUE_PROVIDER = "liquid"
+BLUE_MODEL = "lfm2.5-24b-a2b"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_OPENROUTER_MODEL = BLUE_MODEL  # alias
 
@@ -104,8 +104,7 @@ def get_blue_provider() -> str:
 
 
 def get_blue_model() -> str:
-    # Hard-locked; env cannot override for the graded Blue Team path.
-    return BLUE_MODEL
+    return os.environ.get("LIQUID_MODEL", BLUE_MODEL).strip() or BLUE_MODEL
 
 
 def get_openrouter_api_key() -> str:
@@ -113,13 +112,10 @@ def get_openrouter_api_key() -> str:
 
 
 def blue_client_kwargs() -> dict:
-    """OpenAI SDK kwargs pointing at OpenRouter (Blue Team only)."""
+    """OpenAI-compatible Liquid chat API; base URL excludes /chat/completions."""
     return {
-        "api_key": get_openrouter_api_key() or None,
-        "base_url": (
-            os.environ.get("OPENROUTER_BASE_URL", OPENROUTER_BASE_URL).strip()
-            or OPENROUTER_BASE_URL
-        ),
+        "api_key": os.environ.get("LIQUID_API_KEY", "").strip() or None,
+        "base_url": os.environ.get("LIQUID_BASE_URL", "https://api.liquid.ai/openai/v1").strip(),
     }
 
 
@@ -137,6 +133,8 @@ def get_red_provider() -> str:
         or os.environ.get("LLM_PROVIDER")
         or "openai"
     ).strip().lower()
+    if raw == "openrouter":
+        return PROVIDER_OPENROUTER
     if raw in {"gemini", "google", "adk"}:
         return PROVIDER_GEMINI
     return PROVIDER_OPENAI
@@ -144,6 +142,8 @@ def get_red_provider() -> str:
 
 def get_red_model() -> str:
     """Model Red Team từ .env (cùng cho default + advance)."""
+    if get_red_provider() == PROVIDER_OPENROUTER:
+        return os.environ.get("RED_MODEL", "openai/gpt-4o-mini").strip() or "openai/gpt-4o-mini"
     if get_red_provider() == PROVIDER_GEMINI:
         return (
             os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip()
@@ -170,6 +170,9 @@ def get_openai_api_key() -> str:
 
 
 def red_openai_client_kwargs() -> dict:
+    if get_red_provider() == PROVIDER_OPENROUTER:
+        return {"api_key": os.environ.get("RED_OPENROUTER_API_KEY") or None,
+                "base_url": os.environ.get("RED_OPENROUTER_BASE_URL", OPENROUTER_BASE_URL)}
     return {"api_key": get_openai_api_key() or None}
 
 
@@ -180,7 +183,7 @@ def red_provider_label(tier: str = "advance") -> str:
 
 
 def red_uses_openai_sdk() -> bool:
-    return get_red_provider() == PROVIDER_OPENAI
+    return get_red_provider() in {PROVIDER_OPENAI, PROVIDER_OPENROUTER}
 
 
 def red_uses_gemini() -> bool:
@@ -234,14 +237,14 @@ def is_harder_model() -> bool:
     return any(x in m for x in ("gpt-5.6", "pro", "gemini-3.8", "gemini-3.7"))
 
 
-def setup_api_key():
+def setup_api_key(*, need_blue=True, need_red=True):
     """Ensure keys for Blue (OpenRouter) + Red / Red Advance (OpenAI or Gemini)."""
-    if not get_openrouter_api_key():
-        os.environ["OPENROUTER_API_KEY"] = input(
-            "Enter OpenRouter API Key (Blue): "
-        ).strip()
-    print(f"Blue  — {blue_provider_label()}  [LOCKED]")
+    if need_blue and not os.environ.get("LIQUID_API_KEY", "").strip():
+        raise RuntimeError("Fill LIQUID_API_KEY in .env for Blue.")
+    print(f"Blue  — {blue_provider_label()}")
 
+    if not need_red:
+        return
     red = get_red_provider()
     model = get_red_model()
     if red == PROVIDER_GEMINI:
@@ -249,6 +252,10 @@ def setup_api_key():
             os.environ["GOOGLE_API_KEY"] = input("Enter Google API Key (Red): ").strip()
         os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "0"
         print(f"Red / Red Advance  — gemini:{model}")
+    elif red == PROVIDER_OPENROUTER:
+        if not os.environ.get("RED_OPENROUTER_API_KEY", "").strip():
+            raise RuntimeError("Fill RED_OPENROUTER_API_KEY in .env")
+        print(f"Red / Red Advance — openrouter:{model}")
     else:
         if not get_openai_api_key():
             os.environ["OPENAI_API_KEY"] = input("Enter OpenAI API Key (Red): ").strip()
